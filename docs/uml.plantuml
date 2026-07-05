@@ -1,0 +1,143 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam backgroundColor #FEFEFE
+skinparam class {
+    BackgroundColor #F5F5F5
+    BorderColor #333333
+    ArrowColor #333333
+}
+
+class Renderer {
+  -instancia: Renderer*
+  -camara: camara
+  -modelos: vector<unique_ptr<Modelo>>
+  -luces: vector<unique_ptr<Luz>>
+  -texturas: map<string, unique_ptr<Textura>>
+  -_texturasSombras: map<Luz*, GLuint>
+  -_matricesVisionLuz: map<Luz*, mat4>
+  -_matricesProyeccionLuz: map<Luz*, mat4>
+  -shader: Shader
+  -idSP, idSPSombras: GLuint
+  -_fboSombras: GLuint
+  -indiceModeloSeleccionado: int
+  -indiceLuzSeleccionada: int
+  -movimientoCamara: Movimiento_Camara
+  -modoVisualizacion: ModoVisualizacion
+  -modoColor: ModoColor
+  +getInstancia() : Renderer&
+  +refrescar()
+  +cargarModelo(ruta, nombre)
+  +aniadirLuz(luz)
+  +cargarTextura(ruta, nombre)
+  +movimientoraton(dx, dy)
+  +creaShaderProgram(nombre)
+  +creaShaderProgramSombras()
+  +renderizarShadowMaps()
+}
+
+class Modelo {
+  -VAO, VBO, EBO: GLuint
+  -vertices: vector<Vertex>
+  -indices: vector<uint>
+  -material: Material
+  -transform: mat4
+  -nombre: string
+  +draw(shader)
+  +trasladar(vec3)
+  +rotar(float, vec3)
+  +escalar(vec3)
+  +resetTransform()
+}
+
+struct Vertex {
+  +Posicion: vec3
+  +Normal: vec3
+  +coordenadas: vec2
+  +Tangente: vec3
+  +Bitangente: vec3
+}
+
+class Material {
+  -colorAmbiente, colorDifuso, colorEspecular: vec3
+  -exponenteEspecular: float
+  -texturaColor: Textura*
+  -texturaNormales: Textura*
+}
+
+class Luz {
+  -tipo: TipoLuz
+  -colorAmbiente, colorDifuso, colorEspecular: vec3
+  -posicion, direccion: vec3
+  -anguloApertura, exponenteBordes: float
+}
+
+enum TipoLuz {
+  Ambiente
+  Puntual
+  Direccional
+  Foco
+}
+
+class camara {
+  -posicion, punto_de_referencia, vector_up: vec3
+  -radio, yaw, pitch, fov: float
+  +orbit(dx, dy)
+  +pan(dx, dy)
+  +dolly(delta)
+  +tilt(delta)
+  +crane(delta)
+  +zoom(delta)
+  +reset()
+  +getViewMatrix(): mat4
+  +getProjectionMatrix(aspecto): mat4
+}
+
+enum Movimiento_Camara {
+  orbit
+  pan
+  dolly
+  crane
+  tilt
+  zoom
+}
+
+enum ModoVisualizacion {
+  Alambre
+  Plano
+}
+
+enum ModoColor {
+  Material
+  Textura
+}
+
+class Shader {
+  +ID: GLuint
+  +creaShaderProgram(nombre, idVS, idFS, idSP) {static}
+  +setMat4(name, mat)
+  +querySubroutines(): string
+}
+
+class Textura {
+  -idTextura: GLuint
+  -ancho, alto: int
+  -ruta: string
+  +cargar(ruta)
+  +activar(unidad)
+  +desactivar()
+}
+
+Renderer "1" *-- "1" camara
+Renderer "1" *-- "many" Modelo
+Renderer "1" *-- "many" Luz
+Renderer "1" *-- "1" Shader
+Renderer "1" *-- "many" Textura
+Modelo "1" *-- "1" Material
+Modelo "1" *-- "many" Vertex
+Material "1" o-- "0..1" Textura : texturaColor
+Material "1" o-- "0..1" Textura : texturaNormales
+Luz --> TipoLuz
+camara --> Movimiento_Camara
+Renderer --> ModoVisualizacion
+Renderer --> ModoColor
+@enduml
